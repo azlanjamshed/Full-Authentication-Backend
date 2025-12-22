@@ -1,0 +1,4 @@
+PORT=port
+FRONTEND_URL=frontEnd URL
+MONGODB_URI=MongoDB URL
+JWT_SECRET=your_jwt_secret_key
