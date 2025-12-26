@@ -2,6 +2,8 @@ const express = require("express")
 const app = express()
 const cors = require("cors")
 const cookieParser = require("cookie-parser")
+const authRouter = require("./routes/auth.route")
+
 
 app.use(cors({
     origin: [process.env.FRONTEND_URL],
@@ -11,5 +13,16 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 app.use(express.urlencoded({ extended: true }))
+
+app.use("/api/auth", authRouter)
+
+
+
+
+
+
+const errorMIddleware = require("./middleware/error")
+app.use(errorMIddleware)
+
 
 module.exports = app
