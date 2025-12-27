@@ -1,4 +1,4 @@
-const sendEmail = require("../../utils/sendEmail");
+// const sendEmail = require("../../utils/sendEmail");
 const sendToken = require("../../utils/sendToken");
 const catchAsyncError = require("../middleware/catchAsyncError");
 const crypto = require("crypto")
@@ -6,6 +6,7 @@ const { ErrorHandler } = require("../middleware/error");
 const userModel = require("../models/user.Model");
 // const twilio = require("twilio");
 const sendVerificationCode = require("../../utils/sendVerificationCode");
+const sendEmail = require("../../utils/sendEmail");
 
 // const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN)
 
@@ -57,9 +58,9 @@ const registration = catchAsyncError(async (req, res, next) => {
         if (registrationAttemptsByIUser.length > 3) {
             return next(new ErrorHandler("You have exceed the maximum number of attempt. please try again after an hour", 400))
         }
-
+        const userCount = await userModel.countDocuments();
         const userData = {
-            name, email, password, phone
+            name, email, password, phone, role: userCount === 0 ? "admin" : "user",
         }
 
         const user = await userModel.create(userData)
@@ -133,7 +134,7 @@ const verifyOtp = catchAsyncError(async (req, res, next) => {
 })
 
 const login = catchAsyncError(async (req, res, next) => {
-    console.log("LOGIN BODY:", req.body);
+
     const { email, password } = req.body
 
     if (!email || !password) {
@@ -167,10 +168,91 @@ const logout = catchAsyncError(async (req, res, next) => {
     })
 })
 
+const getUSer = catchAsyncError(async (req, res, next) => {
+    const user = req.user
+
+    res.status(200).json({
+        success: true,
+        user
+    })
+})
 
 
 
+const forgotPassword = catchAsyncError(async (req, res, next) => {
+    const { email } = req.body
+    if (!email) {
+        return next(new ErrorHandler("Email is required", 400))
+    }
 
+    const user = await userModel.findOne({
+        email,
+        accountVerified: true
+    });
+
+    if (!user) {
+        return next(new ErrorHandler("User not fond", 404))
+    }
+    const resetToken = user.generateResetToken();
+    await user.save({ validateBeforeSave: false })
+    const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+    const message = `Your reset Password Token is- \n\n${resetUrl}\n\n if you not requested this email then please ignore.`
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: "MERN Authentication app reset Password",
+            message: message
+        })
+        res.status(200).json({
+            success: true,
+            message: `Email sent to ${user.email} successfully`
+        })
+    } catch (error) {
+        user.resetPasswordToken = undefined,
+            user.resetPasswordExpire = undefined
+        await user.save({ validateBeforeSave: false })
+        return next(new ErrorHandler(error.message ? error.message : "cannot send reset token", 500))
+    }
+})
+
+const resetPassword = catchAsyncError(async (req, res, next) => {
+    const { token } = req.params
+    const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex")
+    const user = await userModel.findOne({
+        resetPasswordToken,
+        resetPasswordExpire: { $gt: Date.now() },
+    })
+    if (!user) {
+        return next(new ErrorHandler("Reset password token is expired or invalid", 400))
+    }
+    if (req.body.password !== req.body.confirmPassword) {
+        return next(new ErrorHandler("password and confirm password are not same", 400))
+    }
+    user.password = req.body.password
+
+    user.resetPasswordToken = undefined,
+        user.resetPasswordExpire = undefined
+    await user.save()
+    sendToken(user, 200, "reset password successfully", res)
+})
+
+
+const makeAdmin = async (req, res, next) => {
+    const user = await userModel.findById(req.params.id);
+
+    if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+    }
+
+    user.role = "admin";
+    await user.save();
+
+    res.status(200).json({
+        success: true,
+        message: "User promoted to admin",
+    });
+};
 //------------------------------------------//
 
 // async function sendVerificationCode(
@@ -248,4 +330,4 @@ const logout = catchAsyncError(async (req, res, next) => {
 // }
 
 
-module.exports = { registration, verifyOtp, login, logout }
+module.exports = { registration, verifyOtp, login, logout, getUSer, forgotPassword, resetPassword, makeAdmin }

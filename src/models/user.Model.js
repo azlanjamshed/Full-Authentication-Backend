@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema({
         unique: true,
         require: true
     },
+    role: {
+        type: String,
+        enum: ["user", "admin"],
+        default: "user", // ✅ important
+    },
     accountVerified: { type: Boolean, default: false },
     // verificationCode: Number,
     verificationCode: String,
@@ -74,17 +79,29 @@ userSchema.methods.generateVerificationCode = function () {
 }
 
 
-userSchema.methods.generateToken = async () => {
+userSchema.methods.generateToken = async function () {
     return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRE
-    })
+
+    },
+    )
 }
 
 
 
 
+userSchema.methods.generateResetToken = function () {
+    const resetToken = crypto.randomBytes(20).toString("hex");
 
+    this.resetPasswordToken = crypto
+        .createHash("sha256")
+        .update(resetToken)
+        .digest("hex");
 
+    this.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+
+    return resetToken;
+};
 
 
 

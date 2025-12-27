@@ -1,5 +1,5 @@
 const twilio = require("twilio");
-
+const sendEmail = require("./sendEmail");
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN)
 
 async function sendVerificationCode(
