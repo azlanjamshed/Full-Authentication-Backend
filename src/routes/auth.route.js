@@ -10,12 +10,12 @@ router.post("/otp-verification", verifyOtp)
 router.post("/login", login)
 router.get("/logout", isAuthenticate, logout)
 router.get("/user", isAuthenticate, getUSer)
-router.post("/reset-password", forgotPassword)
-router.post("/reset-password/:token", resetPassword)
+router.post("password//forgot", forgotPassword)
+router.put("/password/reset/:token", resetPassword)
 router.put(
     "/admin/make-admin/:id",
     isAuthenticate,
     authorizeRoles("admin"), // 🔐 only admin can do this
     makeAdmin
 );
-module.exports = router
+module.exports = router 

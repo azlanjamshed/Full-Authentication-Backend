@@ -92,9 +92,6 @@ const registration = catchAsyncError(async (req, res, next) => {
     }
 })
 
-
-
-
 const verifyOtp = catchAsyncError(async (req, res, next) => {
     const { email, otp } = req.body
     if (!email || !otp) {
@@ -156,8 +153,6 @@ const login = catchAsyncError(async (req, res, next) => {
 
 })
 
-
-
 const logout = catchAsyncError(async (req, res, next) => {
     res.status(200).cookie("token", null, {
         expires: new Date(Date.now()),
@@ -176,8 +171,6 @@ const getUSer = catchAsyncError(async (req, res, next) => {
         user
     })
 })
-
-
 
 const forgotPassword = catchAsyncError(async (req, res, next) => {
     const { email } = req.body
@@ -237,7 +230,6 @@ const resetPassword = catchAsyncError(async (req, res, next) => {
     sendToken(user, 200, "reset password successfully", res)
 })
 
-
 const makeAdmin = async (req, res, next) => {
     const user = await userModel.findById(req.params.id);
 
@@ -253,6 +245,7 @@ const makeAdmin = async (req, res, next) => {
         message: "User promoted to admin",
     });
 };
+
 //------------------------------------------//
 
 // async function sendVerificationCode(
